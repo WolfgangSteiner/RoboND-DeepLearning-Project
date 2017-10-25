@@ -151,16 +151,19 @@ batch during training. In the network with the highest accuracy the first encode
 has a filter depth of 64 which is doubled for the deeper encoders.
 
 The encoder layers are followed by a 1x1 convolution with a filter depth of
-256. This convolutional layer is used instead of a fully connected layer in order
-to retain the spacial information of the segmented image.
+256. \textbf{This convolutional layer is used instead of a fully connected layer in order
+to retain the spacial information of the segmented image.}
 After this layer, three decoder layers are used to interpolate the segmentation
 back to the resolution of the input image. Each decoder uses bilinear interpolation
 to increase the resolution by a factor of two. Additionally, a second input is
 concatenated with the up-sampled tensor. This measure ensures that the network is
 able to do image segmentation at different scale or resolution levels.
 
-The output layer consists of a dense layer with softmax activation function. It has
-three output classes for background, target object and other object.
+
+\textbf{The output layer consists of a dense layer with softmax activation function. It has
+three output classes for background, target object and other object. Thus the fully-connected
+output layer will be able to classify each of the pixels in the image as one
+of three output classes.}
 
 \begin{figure}[ht]
 \centering
@@ -169,10 +172,39 @@ three output classes for background, target object and other object.
 \end{figure}
 
 \section{Training Procedure}
-I used the Adam optimizer with a learning rate of 0.001 and a batch size of 32 to train the network.
+\subsection{Optimizer and Learning Rate}
+As an optimizer for training I chose the Adam algorithm which. The learning
+rate determines the step size during gradient descent. We would want the learning
+rate to be high in order to make fast progress during training. But if the
+learning rate is chosen too high, training might not converge. Choosing a learining
+rate that is too low might result in the training getting stuck in a local
+minimum which would not result in the best model possible. This problem is mitigated
+when using the Adam optimizer because it will dynamically adjust the training rate
+as the training progresses. From experience, I chose 0.001 as the training rate, which
+is also the default value for the Adam optimizer in Keras.
+
+\subsection{Training Epoch}
+The training epoch is an arbitrary convention used in the training of neural networks.
+Commonly one epoch is counted when all of the training examples have been used
+once during optimization. The number of epochs is then a measure of how long
+the network has been trained on the training data. After each epoch, the
+validation loss is calculated by evaluating the validation images. I did not chose
+a specific number of epochs for training. I defined a maximum number of epochs
+of 64 for training. By using a checkpoint callback, the model was saved every time
+the validation loss decreased.
+
+\subsection{Batch Size}
+The batch size determines how many training examples are used in for one step of
+the optimization procedure. Here a balance must be achieved between convergence
+on the one hand which commonly favors smaller batch sizes and parallelization on
+the GPU which calls for larger batch sizes. I picked 32 as a batch size and found
+training performance to be good. Thus I did not have a reason to change or
+experiment with this value.
+
+\subsection{Data Augmentation}
 I implemented a simple data augmentation procedure which randomly flips the training and
-ground truth images horizontally. The training was performed for a maximum of 64 epochs
-but the model was saved by use of a Keras callback whenever the validation loss decreased.
+ground truth images horizontally. This kind of data augmentation is very easy
+to implement and practically doubles the number of training examples for free.
 
 
 \section{Results}
@@ -213,16 +245,19 @@ Original image (left), ground truth (center), segmentation results (right).}
 \end{figure}
 
 
-
-
-
 \section{Limitations of the Model}
 As this model was trained specifically on images derived from a simulator, I would
 not expect it to work particularly well on real-world images from a camera. Furthermore,
 the target object in the training data was a humanoid dressed in red clothes. Thus,
 it would not be possible for the drone to follow other persons dressed in different colors or
-even other objects or animals.
-
+even other objects or animals. We could use the same model architecture unchanged but train on
+different image data if the task was for the drone to follow one specific object.
+I think that it would also be possible to train the same model to classify different
+objects as a target but then the model would follow any of the object classified as "target"
+indiscriminately. If the drone should be able to select one specific target object from
+a collection of targets, the number of classes would need to be altered. This could
+be achieved by changing the number of output neurons of the final dense layer of the
+model.
 
 \section{Future Enhancements}
 In order to improve the accuracy of the model, the filter depth could be further increased
