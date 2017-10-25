@@ -30,6 +30,7 @@
 import os
 from glob import glob
 from scipy import misc
+import random
 
 import numpy as np
 from tensorflow.contrib.keras.python.keras.preprocessing.image import Iterator
@@ -82,6 +83,14 @@ def shift_and_pad_augmentation(image, image_mask):
              :] = mask_patch
 
     return new_im, new_mask
+
+
+def flip_horizontal_augmentation(image, image_mask):
+    if random.random() > 0.5:
+        image = np.fliplr(image)
+        image_mask = np.fliplr(image_mask)
+	
+    return image, image_mask
 
 
 class BatchIteratorSimple(Iterator):
@@ -149,8 +158,9 @@ class BatchIteratorSimple(Iterator):
                 if gt_image.shape[0] != self.image_shape[0]:
                     gt_image = misc.imresize(gt_image, self.image_shape)
 
-                #if self.shift_aug:
+                if self.shift_aug:
                 #    image, gt_image = shift_and_pad_augmentation(image, gt_image)
+                    image, gt_image = flip_horizontal_augmentation(image, gt_image)
 
                 image = preprocess_input(image.astype(np.float32))
                 batch_x[e,:,:,:] = image
